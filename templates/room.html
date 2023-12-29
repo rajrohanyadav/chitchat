@@ -1,0 +1,60 @@
+{% extends 'base.html' %} {% block content %}
+<div id="room-container">
+    <h1 id="home-header">Flask Chat 💬</h1>
+    <div id="room-subsection">
+        <h2 id="room-code-display">Room Code: <span id="roomCode">{{room}}</span><button id="copy-btn" onclick="copyCode()">copy</button></h2>
+        <a href="/" id="leave-chat-btn">Leave the Chat</a>
+    </div>
+    <div id="chat-room-widget">
+        <div id="msgs-container">
+            <ul id="messages"></ul>
+        </div>
+        <div id="message-box">
+            <input type="text" placeholder="Enter your message" id="message-input" name="message" />
+            <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var socketio = io();
+        socketio.on("message", function (message) { createChatItem(message.message, message.sender) });
+        function createChatItem(message, sender) {
+            var messages = document.getElementById("messages");
+            if (sender === "") {
+                content = `<p class="member-activity">${message}</p>`;
+            } else {
+                var senderIsUser = "{{user}}" === sender;
+                var content = `
+          <li class="message-item ${senderIsUser ? "self-message-item" : "peer-message-item"}">
+              <p>${message}</p>
+              <small class="${senderIsUser ? "muted-text" : "muted-text-white"}">${new Date().toLocaleString()} - ${sender}</small>
+          </li>
+      `;
+            }
+            messages.innerHTML += content;
+        }
+        function sendMessage() {
+            var msgInput = document.getElementById("message-input");
+            if (msgInput.value === "") return;
+            var msg = msgInput.value;
+            socketio.emit("message", { message: msg });
+            msgInput.value = "";
+        }
+        document.querySelector('#message-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage()
+            }
+        });
+        function copyCode() {
+            var copyText = document.getElementById("roomCode");
+            navigator.clipboard.writeText(copyText.innerText);
+            var copyBtn = document.getElementById("copy-btn");
+            copyBtn.innerText = "copied";
+        }
+    </script>
+    {% for message in messages %}
+    <script type="text/javascript">
+        createChatItem("{{message.message}}", "{{message.sender}}");
+    </script>
+    {% endfor %}
+</div>
+{% endblock %}
